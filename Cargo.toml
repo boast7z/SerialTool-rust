@@ -1,0 +1,105 @@
+[package]
+name = "serial-debugger"
+version = "0.4.0"
+edition = "2024"
+
+[[bin]]
+name = "serial-debugger"
+path = "src/main.rs"
+
+[dependencies]
+iced = {version = "0.14" , features = ["hot", "svg", "tokio"] }
+image = { version = "0.25", default-features = false, features = ["png"] }
+futures = "0.3"
+tokio = { version = "1", features = ["time"] }
+serialport = "4"
+chrono = { version = "0.4", features = ["serde"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+dirs = "6"
+
+[target.'cfg(windows)'.dependencies]
+winreg = "0.52"
+
+[target.'cfg(not(windows))'.dependencies]
+libc = "0.2"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+tempfile = "3"
+
+[build-dependencies]
+winresource = "0.1"
+
+# ── cargo-packager ───────────────────────────────────────────────────────────
+# 用法:
+#   Windows NSIS:       cargo packager --release --formats nsis
+#   Linux deb/rpm/arch: cargo packager --release --formats deb,rpm,pacman
+[package.metadata.packager]
+name = "串口调试助手"
+identifier = "com.serial-debugger.iced-demo"
+version = "0.4.0"
+description = "基于 iced 的串口调试助手"
+longDescription = "使用 Rust 和 iced GUI 框架开发的串口调试工具，支持串口数据收发、历史记录、快捷指令等功能。"
+authors = ["boast"]
+copyright = "Copyright (c) 2024 boast"
+outDir = "dist"
+formats = ["nsis", "deb", "appimage", "pacman"]
+beforePackagingCommand = "cargo build --release --bin serial-debugger"
+icons = [
+  "icons/icon.ico",
+  "icons/32x32.png",
+  "icons/128x128.png",
+  "icons/256x256.png",
+]
+
+[[package.metadata.packager.binaries]]
+path = "serial-debugger"
+main = true
+
+[package.metadata.packager.nsis]
+installMode = "perMachine"
+languages = ["SimpChinese", "English"]
+displayLanguageSelector = true
+compression = "lzma"
+
+[package.metadata.packager.deb]
+section = "utils"
+priority = "optional"
+depends = ["libc6 (>= 2.17)", "libudev1"]
+
+[package.metadata.packager.pacman]
+depends = ["gcc-libs", "systemd"]
+
+# ── cargo-generate-rpm ───────────────────────────────────────────────────────
+# 用法: cargo build --release && cargo generate-rpm
+# 输出: target/generate-rpm/*.rpm
+[package.metadata.generate-rpm]
+name = "serial-debugger"
+summary = "基于 iced 的串口调试助手"
+description = "使用 Rust 和 iced GUI 框架开发的串口调试工具，支持串口数据收发、历史记录、快捷指令等功能。"
+license = "MIT"
+release = "1"
+
+[package.metadata.generate-rpm.requires]
+glibc = "*"
+systemd-libs = "*"   # 提供 libudev.so
+
+[[package.metadata.generate-rpm.assets]]
+source = "target/release/serial-debugger"
+dest = "/usr/bin/serial-debugger"
+mode = "755"
+
+[[package.metadata.generate-rpm.assets]]
+source = "icons/256x256.png"
+dest = "/usr/share/pixmaps/serial-debugger.png"
+mode = "644"
+
+[[package.metadata.generate-rpm.assets]]
+source = "icons/128x128.png"
+dest = "/usr/share/icons/hicolor/128x128/apps/serial-debugger.png"
+mode = "644"
+
+[[package.metadata.generate-rpm.assets]]
+source = "icons/32x32.png"
+dest = "/usr/share/icons/hicolor/32x32/apps/serial-debugger.png"
+mode = "644"

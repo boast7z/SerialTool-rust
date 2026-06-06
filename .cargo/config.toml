@@ -1,0 +1,46 @@
+# ── 交叉编译链接器配置 ─────────────────────────────────────────────────────────
+# 仅在对应目标三元组构建时生效；x86_64 原生构建不受影响。
+# 相关工具链安装、pkg-config 设置、打包命令详见 docs/PACKAGING.md。
+#
+# 注：此项目通过 serialport 依赖 libudev（Linux），交叉编译时 pkg-config
+# 无法自动找到目标库，需在构建命令前设置环境变量，见各章节说明。
+
+# ── Linux ARM64 ───────────────────────────────────────────────────────────────
+# Arch:   sudo pacman -S aarch64-linux-gnu-gcc
+# Debian: sudo apt install gcc-aarch64-linux-gnu libudev-dev:arm64
+[target.aarch64-unknown-linux-gnu]
+linker = "aarch64-linux-gnu-gcc"
+
+# ── Linux ARMv7hf（树莓派 2/3/4、大多数嵌入式 ARM 板，硬浮点）────────────────
+# Arch:   yay -S arm-linux-gnueabihf-gcc  (AUR)
+# Debian: sudo apt install gcc-arm-linux-gnueabihf libudev-dev:armhf
+[target.armv7-unknown-linux-gnueabihf]
+linker = "arm-linux-gnueabihf-gcc"
+
+# ── Linux ARMv6（树莓派 Zero / 1，软浮点）────────────────────────────────────
+# Debian: sudo apt install gcc-arm-linux-gnueabi libudev-dev:armel
+[target.arm-unknown-linux-gnueabi]
+linker = "arm-linux-gnueabi-gcc"
+
+# ── Linux x86 32 位 ───────────────────────────────────────────────────────────
+# Arch:   sudo pacman -S multilib-devel lib32-systemd
+# Debian: sudo apt install gcc-multilib lib32-systemd（或 libsystemd-dev:i386）
+# 注：x86_64 的 gcc 开启 multilib 后可直接编译 i686，无需单独链接器
+[target.i686-unknown-linux-gnu]
+linker = "gcc"
+rustflags = ["-C", "target-cpu=i686"]
+
+# ── Windows x86_64（MinGW，从 Linux 交叉编译）────────────────────────────────
+# Arch:   sudo pacman -S mingw-w64-gcc
+# Debian: sudo apt install gcc-mingw-w64-x86-64
+# 注：Windows 平台打包（NSIS）仍须在 Windows 上运行 cargo packager
+[target.x86_64-pc-windows-gnu]
+linker = "x86_64-w64-mingw32-gcc"
+ar = "x86_64-w64-mingw32-ar"
+
+# ── Windows i686（MinGW，从 Linux 交叉编译）──────────────────────────────────
+# Arch:   sudo pacman -S mingw-w64-gcc
+# Debian: sudo apt install gcc-mingw-w64-i686
+[target.i686-pc-windows-gnu]
+linker = "i686-w64-mingw32-gcc"
+ar = "i686-w64-mingw32-ar"

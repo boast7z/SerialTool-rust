@@ -1,0 +1,23 @@
+--- a/driver/ch341.c
++++ b/driver/ch341.c
+@@ -70,6 +70,10 @@
+
+ #include "ch341.h"
+
++static bool no_dtr_on_open;
++module_param(no_dtr_on_open, bool, 0644);
++MODULE_PARM_DESC(no_dtr_on_open, "Skip DTR/RTS raise on open, prevents target board reset (default: N)");
++
+ #define DRIVER_AUTHOR "WCH"
+ #define DRIVER_DESC "USB serial driver for CH340, CH341, etc."
+ #define VERSION_DESC "V1.9 On 2025.12"
+@@ -656,9 +660,8 @@ static void ch341_port_dtr_rts(struct tty_port *port, int raise)
+ 	struct ch341 *ch341 = container_of(port, struct ch341, port);
+ 	int res;
+
+-#ifdef IGNORE_RTSDTR
+-	return;
+-#endif
++	if (no_dtr_on_open && raise)
++		return;
+ 	if (raise)

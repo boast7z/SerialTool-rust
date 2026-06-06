@@ -1,0 +1,85 @@
+# cargo-packager 打包配置
+#
+# 用法:
+#   构建所有格式:    cargo packager --release
+#   构建指定格式:    cargo packager --release --formats nsis
+#                   cargo packager --release --formats deb,rpm,pacman
+#
+# 注意事项:
+#   - Windows NSIS 格式需要在 Windows 上构建，并安装 NSIS (https://nsis.sourceforge.io)
+#   - deb / rpm / pacman 格式需要在 Linux 上构建
+#   - 打包前须在项目根目录创建 icons/ 并放入下方说明的图标文件
+
+name = "串口调试助手"
+identifier = "com.serial-debugger.iced-demo"
+version = "0.4.0"
+description = "基于 iced 的串口调试助手"
+longDescription = "使用 Rust 和 iced GUI 框架开发的串口调试工具，支持串口数据收发、历史记录、快捷指令等功能。"
+authors = ["boast"]
+copyright = "Copyright (c) 2024 boast"
+
+# 图标文件（打包前需手动准备，放入项目根目录下的 icons/ 文件夹）:
+#   icons/icon.ico       - Windows 安装包图标（建议包含 16/32/48/256px 多分辨率）
+#   icons/32x32.png      - Linux 桌面图标 32×32
+#   icons/128x128.png    - Linux 桌面图标 128×128
+#   icons/256x256.png    - Linux 桌面图标 256×256
+#
+# 可用 ImageMagick 从一张 PNG 生成所有尺寸:
+#   convert icon.png -resize 32x32   icons/32x32.png
+#   convert icon.png -resize 128x128 icons/128x128.png
+#   convert icon.png -resize 256x256 icons/256x256.png
+#   convert icon.png icons/icon.ico
+icons = [
+  "icons/icon.ico",
+  "icons/32x32.png",
+  "icons/128x128.png",
+  "icons/256x256.png",
+]
+
+# 打包输出目录（相对于项目根目录）
+outDir = "dist"
+
+# 目标格式列表（也可在命令行用 --formats 覆盖）:
+#   nsis     → Windows NSIS 安装程序（.exe）
+#   deb      → Debian / Ubuntu（.deb）
+#   appimage → Linux AppImage（通用，免安装）
+#   pacman   → Arch Linux（.tar.zst，可直接 pacman -U 安装）
+# 注意: 此版本 cargo-packager 不支持 rpm 格式
+formats = ["nsis", "deb", "appimage", "pacman"]
+
+# 可执行文件
+# cargo packager 会在 target/release/ 下查找同名二进制
+[[binaries]]
+path = "serial-debugger"
+main = true
+
+# ── Windows NSIS 安装程序 ────────────────────────────────────────────────────
+[nsis]
+# installMode:
+#   "perMachine" = 安装到系统目录（需管理员权限，所有用户可用）
+#   "perUser"    = 安装到用户目录（无需管理员权限，仅当前用户）
+installMode = "perMachine"
+# 安装界面支持的语言；SimpChinese 即简体中文
+languages = ["SimpChinese", "English"]
+# 若 languages 包含多种语言，是否在安装开始时显示语言选择对话框
+displayLanguageSelector = true
+# 压缩算法: "zlib" | "bzip2" | "lzma"（lzma 压缩率最高，推荐）
+compression = "lzma"
+
+# ── Debian / Ubuntu (.deb) ───────────────────────────────────────────────────
+[deb]
+section = "utils"
+priority = "optional"
+# 运行时依赖（serialport crate 在 Linux 上需要 libudev）
+depends = [
+  "libc6 (>= 2.17)",
+  "libudev1",
+]
+
+# ── Arch Linux (pacman / .tar.zst) ───────────────────────────────────────────
+[pacman]
+# 运行时依赖（Arch 包名）
+depends = [
+  "gcc-libs",
+  "systemd",        # 提供 libudev.so
+]

@@ -1,0 +1,6 @@
+/target
+/dist/*.exe
+/dist/*.deb
+/dist/*.rpm
+/dist/*.AppImage
+/dist/*.tar.zst
