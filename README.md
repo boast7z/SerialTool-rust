@@ -1,6 +1,8 @@
 # 串口调试助手 (SerialTool-Rust)
 
-> 基于 **Rust + [iced](https://github.com/iced-rs/iced) 0.14** 构建的跨平台串口调试工具，支持 Windows / Linux / macOS
+> 基于 **Rust + [iced](https://github.com/iced-rs/iced) 0.14** 构建的串口调试工具
+>
+> 已在 **Windows x64** 和 **Linux x64** 上测试，其他平台理论可编译但未验证
 
 ---
 
@@ -43,6 +45,8 @@ cargo run --bin serial-debugger
 cargo build --release --bin serial-debugger
 ```
 
+**Rust 版本要求**：≥ 1.85（`edition = "2024"`）
+
 ### Linux 串口权限
 
 ```bash
@@ -56,7 +60,7 @@ sudo usermod -aG dialout $USER
 | 平台 | 路径 |
 |------|------|
 | Windows | `%APPDATA%\iced_serialtool\` |
-| Linux / macOS | `~/.config/iced_serialtool/` |
+| Linux | `~/.config/iced_serialtool/` |
 
 ---
 
@@ -211,25 +215,7 @@ AppState
 
 ## 未完成功能规划
 
-### 近期（v0.5.x）
-
-- [ ] **多标签页 / 多串口**：同时打开多个串口，每个串口独占一个标签页
-- [ ] **绘图面板**：解析固定格式数值数据（如 `V:3.30,I:0.12`），实时绘制折线图
-- [ ] **协议解析插件**：预置 Modbus RTU / ASCII 帧解析，高亮显示帧头、地址、功能码、CRC
-- [ ] **宏录制与回放**：录制一段收发交互序列，按时序自动回放
-- [ ] **接收区高亮规则**：用户可配置正则表达式，匹配行按颜色高亮
-
-### 中期（v0.6.x）
-
-- [ ] **脚本发送**：内嵌简单脚本引擎（Lua 或 Rhai），支持条件判断、循环、延时发送
-- [ ] **数据统计面板**：波特率利用率、帧率、错误率实时统计
-- [ ] **会话文件**：将串口配置、快捷命令、日志目录打包为 `.session` 文件，一键切换项目
-- [ ] **主题编辑器**：在应用内自定义颜色方案并导出为 JSON
-
-### 长期
-
-- [ ] **移动端（Android）**：通过 USB OTG 连接串口设备，复用同一套 Rust 逻辑
-- [ ] **远程串口**：通过 TCP/WebSocket 将本机串口转发到远端，支持多人共享调试
+- [ ] **检查更新**：启动时或手动触发，检测 GitHub Releases 是否有新版本并提示用户下载
 
 ---
 

@@ -2,10 +2,13 @@
 
 本文档覆盖项目所有公开模块的函数、类型与关键内部实现，包含签名、参数说明和行为描述。
 
+> **测试平台**：Windows x64、Linux x64。其他平台理论可编译但未验证，文档中不对未测试平台作兼容性承诺。
+
 ---
 
 ## 目录
 
+- [构建脚本 (`build.rs`)](#构建脚本-buildrs)
 - [类型层 (`src/types.rs`)](#类型层-srctypesrs)
   - [串口参数枚举](#串口参数枚举)
   - [应用级枚举](#应用级枚举)
@@ -27,6 +30,38 @@
   - [设置面板 (`settings.rs`)](#设置面板-settingsrs)
   - [侧边栏 (`sidebar.rs`)](#侧边栏-sidebarrs)
   - [主题 (`theme.rs`)](#主题-themers)
+  - [样式 (`styles.rs`)](#样式-stylesrs)
+  - [图标 (`icons.rs`)](#图标-iconsrs)
+
+---
+
+## 构建脚本 (`build.rs`)
+
+Cargo 在编译前自动执行，仅在目标平台为 Windows 时生效。
+
+```rust
+fn main() {
+    if std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default() == "windows" {
+        let mut res = winresource::WindowsResource::new();
+        res.set_icon("icons/icon.ico");
+        res.set("ProductName", "串口调试助手");
+        res.set("FileDescription", "串口调试助手");
+        res.set("CompanyName", "boast");
+        res.compile().expect("Failed to compile Windows resources");
+    }
+}
+```
+
+**作用**：通过 `winresource` 将以下内容编译时嵌入 EXE：
+
+| 资源 | 值 |
+|------|----|
+| 应用图标 | `icons/icon.ico`（资源管理器、任务栏显示） |
+| ProductName | `串口调试助手` |
+| FileDescription | `串口调试助手` |
+| CompanyName | `boast` |
+
+非 Windows 平台（Linux）此脚本无任何操作，`winresource` 依赖也不会被编译（`[build-dependencies]` 在非 Windows 上被条件排除）。
 
 ---
 
@@ -1246,3 +1281,130 @@ pub fn get_theme(monitor: &SerialMonitor) -> iced::Theme
 
 - `true` → `Theme::TokyoNight`（深色）
 - `false` → `Theme::CatppuccinLatte`（浅色）
+
+---
+
+### 样式 (`styles.rs`)
+
+控件外观样式的统一出口，所有颜色常量和样式函数集中于此，UI 各模块直接引用，不在各处硬编码颜色值。
+
+#### 颜色常量
+
+| 常量 | RGB 近似值 | 用途 |
+|------|-----------|------|
+| `COLOR_SUCCESS` | `(0.45, 0.75, 0.45)` 绿色 | RX 字节计数、连接成功提示 |
+| `COLOR_ACCENT_TX` | `(0.45, 0.55, 0.85)` 蓝色 | TX 字节计数 |
+| `COLOR_DIM` | `(0.55, 0.55, 0.55)` 灰色 | 连接中只读参数、辅助说明文字 |
+| `COLOR_WARNING` | `(0.90, 0.60, 0.10)` 橙色 | 目录不存在警告、重置确认提示 |
+| `COLOR_SECTION_LABEL` | `(0.45, 0.45, 0.55)` 蓝灰色 | 设置面板各分组标签 |
+| `COLOR_CONNECTED` | `(0.20, 0.80, 0.20)` 亮绿色 | `● 已连接` 状态指示点 |
+
+---
+
+#### `icon_color`
+
+```rust
+pub fn icon_color(is_dark: bool) -> iced::Color
+```
+
+根据主题返回 SVG 图标的着色颜色：
+
+- 深色模式：`rgb(0.85, 0.85, 0.88)`（近白色，在深色背景上清晰）
+- 浅色模式：`rgb(0.35, 0.35, 0.40)`（深灰色，在浅色背景上清晰）
+
+---
+
+#### `panel_container`
+
+```rust
+pub fn panel_container(theme: &iced::Theme) -> widget::container::Style
+```
+
+三列面板的背景容器样式，含圆角（8 px）和细边框。
+
+| 状态 | 背景色 | 边框色 |
+|------|--------|--------|
+| 深色 | `rgb(0.15, 0.15, 0.18)` | `rgba(0.25, 0.25, 0.30, 0.5)` |
+| 浅色 | `rgb(0.97, 0.97, 0.98)` | `rgba(0.75, 0.75, 0.80, 0.5)` |
+
+---
+
+#### `button_primary`
+
+```rust
+pub fn button_primary(theme: &iced::Theme, status: widget::button::Status) -> widget::button::Style
+```
+
+主操作按钮样式（蓝色填充，白色文字），用于「打开串口」「发送」等主要动作。响应 `Active`、`Hovered`、`Pressed`、`Disabled` 四种状态，`Disabled` 时透明度降为 50%。
+
+---
+
+#### `button_subtle`
+
+```rust
+pub fn button_subtle(theme: &iced::Theme, status: widget::button::Status) -> widget::button::Style
+```
+
+低视觉权重按钮样式（透明背景，跟随主题文字色），用于工具栏图标按钮、折叠展开按钮等辅助操作。悬停时显示极淡的半透明遮罩。
+
+---
+
+#### `rx_editor`
+
+```rust
+pub fn rx_editor(theme: &iced::Theme, _status: widget::text_editor::Status) -> widget::text_editor::Style
+```
+
+接收区只读 `text_editor` 的外观样式。背景与 `panel_container` 内容区配色一致，无输入框视觉效果（无高亮边框），选中文字使用蓝色半透明高亮（`rgba(0.25, 0.55, 0.95, 0.35)`）。
+
+---
+
+#### `rule_style`
+
+```rust
+pub fn rule_style(theme: &iced::Theme) -> widget::rule::Style
+```
+
+设置面板各分组之间的分隔线样式。深色模式用 `rgba(0.3, 0.3, 0.35, 0.4)`，浅色模式用 `rgba(0.7, 0.7, 0.75, 0.4)`，全宽绘制（`FillMode::Full`）。
+
+---
+
+### 图标 (`icons.rs`)
+
+所有 SVG 图标通过 `include_str!` 在编译时嵌入二进制，运行时无需外部文件。
+
+#### `icon`（私有辅助函数）
+
+```rust
+fn icon(svg_data: &'static str, size: f32, is_dark: bool) -> widget::Svg<'static>
+```
+
+从编译时内嵌的 SVG 字符串创建着色图标控件。颜色由 `styles::icon_color(is_dark)` 统一管理，深色/浅色模式自动切换。
+
+**参数**
+
+| 参数 | 说明 |
+|------|------|
+| `svg_data` | 编译时嵌入的 SVG 字符串（`include_str!` 结果） |
+| `size` | 图标宽高（px），正方形 |
+| `is_dark` | 当前是否深色主题 |
+
+---
+
+#### 公开图标函数
+
+所有图标函数签名形如 `pub fn name(size: f32, is_dark: bool) -> widget::Svg<'static>`，对应图标文件均在 `assets/icons/` 目录下：
+
+| 函数 | 图标文件 | 使用位置 |
+|------|----------|----------|
+| `settings` | `settings.svg` | 左面板工具栏：进入应用设置页 |
+| `plug` | `plug.svg` | 串口配置面板：连接状态指示 |
+| `download` | `download.svg` | 终端面板接收区工具栏 |
+| `upload` | `upload.svg` | 终端面板发送区工具栏 |
+| `trash` | `trash-2.svg` | 清空历史、清空快捷命令按钮 |
+| `eraser` | `eraser.svg` | 清空接收区、清空发送框按钮 |
+| `send` | `send.svg` | 发送按钮 |
+| `arrow_down_to_line` | `arrow-down-to-line.svg` | 保存日志按钮 |
+| `timer` | `timer.svg` | 定时发送开关旁图标 |
+| `usb` | `usb.svg` | 暂未使用，保留备用 |
+| `clock` | `clock.svg` | 暂未使用，保留备用 |
